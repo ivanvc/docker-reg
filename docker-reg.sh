@@ -7,7 +7,7 @@ shift
 shift
 shift
 KV=$@
-DOCKER_PORTS=$(/usr/bin/docker port $MACH $PORT)
+DOCKER_PORTS=$(/usr/bin/docker -H=unix:///docker.sock port $MACH $PORT)
 KV="host=$(echo $DOCKER_PORTS | awk -F':' '{print $1}') $KV"
 KV="port=$(echo $DOCKER_PORTS | awk -F':' '{print $2}') $KV"
 
