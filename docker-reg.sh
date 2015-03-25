@@ -1,23 +1,21 @@
 #!/bin/bash
 
-MACH=$1
-PORT=$2
-SERV=$3
-IP_PORT=$(/usr/bin/docker -H=unix:///docker.sock port $MACH $PORT)
-IP=$(echo $IP_PORT | awk -F':' '{print $1}')
-PORT=$(echo $IP_PORT | awk -F':' '{print $2}')
-MACH=$(echo $MACH | sed ':l s/\./_/;tl')
+SERVICE=$1
+CONTAINER_NAME=$2
+PORT=$3
 
 CTL="etcdctl -C http://${ETCD_PORT_10000_TCP_ADDR}:${ETCD_PORT_10000_TCP_PORT}"
+URI_NAME=$(echo $CONTAINER_NAME | awk '{ gsub(/_/, "-"); print }')
+PUBLISHED_PORT=""
+[[ -z $PORT ]] && PUBLISHED_PORT=$(/usr/bin/docker port $CONTAINER_NAME $PORT | awk -F':' '{print $2}')
 
-KEY_IP_PORT="/services/${SERV}/ip_port/${MACH}"
-KEY_IP="/services/${SERV}/ip/${MACH}"
-KEY_PORT="/services/${SERV}/port/${MACH}"
-trap "$CTL rm $KEY_IP_PORT; $CTL rm $KEY_IP; $CTL rm $KEY_PORT; exit" SIGHUP SIGINT SIGTERM
+KEY="/services/${SERVICE}/${URI_NAME}"
+trap "$CTL rm $KEY; exit" SIGHUP SIGINT SIGTERM
 
 while [ 1 ]; do
-  $CTL --debug set "$KEY_IP_PORT" "${IP_PORT}" --ttl 5
-  $CTL --debug set "$KEY_IP" "${IP}" --ttl 5
-  $CTL --debug set "$KEY_PORT" "${PORT}" --ttl 5
+  IP=$(/usr/bin/docker inspect $CONTAINER_NAME | grep IPAddress | awk '{ gsub(/[^0-9\.]/, ""); print }')
+  VALUE="{\"IP\":\"${IP}\",\"port\":\"${PUBLISHED_PORT}\"}"
+
+  $CTL --debug set "$KEY" "${IP}" --ttl 5
   sleep 1
 done
