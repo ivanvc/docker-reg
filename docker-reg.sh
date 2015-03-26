@@ -16,6 +16,6 @@ while [ 1 ]; do
   IP=$(/usr/bin/docker inspect $CONTAINER_NAME | grep IPAddress | awk '{ gsub(/[^0-9\.]/, ""); print }')
   VALUE="{\"IP\":\"${IP}\",\"port\":\"${PUBLISHED_PORT}\"}"
 
-  $CTL --debug set "$KEY" "${IP}" --ttl 5
+  $CTL --debug set "$KEY" "$VALUE" --ttl 5
   sleep 1
 done
